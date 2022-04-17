@@ -9,6 +9,7 @@ export const state = {
     resultsPerPage: config.RES_PER_PAGE,
     page: 1,
   },
+  bookmarks: [],
 };
 export const loadRecipe = async function (id) {
   try {
@@ -28,6 +29,11 @@ export const loadRecipe = async function (id) {
       cookingTime: recipe.cooking_time,
       ingredients: recipe.ingredients,
     };
+    if (state.bookmarks.some(bookmark => bookmark.id === id)) {
+      state.recipe.bookmarked = true;
+    } else {
+      state.recipe.bookmarked = false;
+    }
   } catch (err) {
     console.error(`${err} 🆘🆘🆘`);
     throw err;
@@ -57,3 +63,42 @@ export const getSearchResultPage = function (page = state.search.page) {
   const end = page * state.search.resultsPerPage;
   return state.search.results.slice(start, end);
 };
+
+export const updateServings = function (newServings) {
+  state.recipe.ingredients.forEach(ings => {
+    ings.quantity = (ings.quantity * newServings) / state.recipe.servings;
+  });
+  state.recipe.servings = newServings;
+};
+
+const saveLocalStorage = function () {
+  localStorage.setItem('bookmark', JSON.stringify(state.bookmarks));
+};
+
+export const addBookmarks = function (recipe) {
+  // add bookmarks
+  state.bookmarks.push(recipe);
+  // Mark current recipe as bookmark
+  if (recipe.id === state.recipe.id) {
+    state.recipe.bookmarked = true;
+  }
+  saveLocalStorage();
+};
+
+export const deleteBookmarks = function (id) {
+  const index = state.bookmarks.findIndex(el => el.id === id);
+  state.bookmarks.splice(index, 1);
+
+  if (id === state.recipe.id) {
+    state.recipe.bookmarked = false;
+  }
+  saveLocalStorage();
+};
+
+const init = function () {
+  const storage = localStorage.getItem('bookmark');
+  if (storage) {
+    state.bookmarks = JSON.parse(storage);
+  }
+};
+init();
